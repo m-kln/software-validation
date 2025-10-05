@@ -405,4 +405,372 @@ public class ProjectsTest {
         
     }
 
+    // --------------------- /categories ----------------------
+    @Test
+    @DisplayName("POST /projects/:id/categories should allow a project to be associated to a category")
+    void testPostProjectToCategory() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create an initial category
+        String jsonBody2 = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2))
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
+        JsonObject json2 = reader2.readObject();
+        String createdCategoryId = json2.getString("id").trim(); // store for cleanup
+
+        // Act
+        
+        // Associate the category with the project
+        String jsonBody3 = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3))
+                .build();
+        
+        HttpResponse<String> response3 = client.send(request3, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3.statusCode() == 200 || response3.statusCode() == 201);
+
+        // Get the project back to ensure association was created
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .GET()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response4.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("projects"));
+            JsonArray projectsArray = root.getJsonArray("projects");
+            JsonObject project = projectsArray.getJsonObject(0);
+            JsonArray categoriesArray = project.getJsonArray("categories");
+            
+            // Look to see if the category newly associated is in the list of categories of the project
+            boolean found = false;
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdCategoryId)) {
+                    found = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertTrue(found, "Category is associated with the project");
+            assertEquals(201, response3.statusCode(), "Expected HTTP 201 Created");
+        }
+
+    }
+
+
+    @Test
+    @DisplayName("GET /projects/:id/categories should return a project's associated categories")
+    void testGetProjectCategories() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create two initial categories
+        String jsonBody2a = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdCategoryId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Hydrid",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
+
+        
+       // Associate the categories with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        // Associate the category with the project
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .GET()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response4.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("projects"));
+            JsonArray projectsArray = root.getJsonArray("projects");
+            JsonObject project = projectsArray.getJsonObject(0);
+            JsonArray categoriesArray = project.getJsonArray("categories");
+
+            // Look to see if the category newly associated is in the list of categories of the project
+            boolean found1 = false;
+            boolean found2 = false;
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdCategoryId)) {
+                    found1 = true;
+                    break;
+                }
+            }
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdCategoryId2)) {
+                    found2 = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertTrue(found1, "Category 1 is associated with the project");
+            assertTrue(found2, "Category 2 is associated with the project");
+            assertEquals(200, response4.statusCode(), "Expected HTTP 200 Created");
+        }
+    }
+
+    @Test
+    @DisplayName("DELETE /projects/:id/categories should delete a project's associated categories with a specific id")
+    void testDeleteProjectCategories() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create two initial categories
+        String jsonBody2a = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdCategoryId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Hydrid",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
+
+        
+       // Associate the categories with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        // Associate the category with the project
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        // Delete the first association of one of the categories with the project
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories/" + createdCategoryId))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+        
+        // Retrieve the project that was associated to the categories
+        HttpRequest request5 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .GET()
+                .build();
+
+        HttpResponse<String> response5 = client.send(request5, HttpResponse.BodyHandlers.ofString());
+        
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response5.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("projects"));
+            JsonArray projectsArray = root.getJsonArray("projects");
+            JsonObject project = projectsArray.getJsonObject(0);
+            JsonArray categoriesArray = project.getJsonArray("categories");
+
+            // Look to see if the category newly removed from the project is in the list of categories of the project
+            boolean found1 = false;
+            boolean found2 = false;
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdCategoryId)) {
+                    found1 = true;
+                    break;
+                }
+            }
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdCategoryId2)) {
+                    found2 = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertFalse(found1, "Category 1 is should not be associated with the project");
+            assertTrue(found2, "Category is associated with the project");
+
+            assertEquals(200, response4.statusCode(), "Expected HTTP 200 Created");
+        }
+
+    }
 }
