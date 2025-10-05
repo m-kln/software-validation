@@ -285,7 +285,7 @@ public class ProjectsTest {
 
     @Test
     @DisplayName("PUT /projects/:id should allow a project's instances to be amended")
-    void testPutProjectById() throws IOException, InterruptedException {
+    void testPutProjectByIdPassing() throws IOException, InterruptedException {
         // Arrange
         // Create initial project 
         String jsonBody = """
@@ -349,6 +349,7 @@ public class ProjectsTest {
         
     }
 
+    
     @Test
     @DisplayName("DELETE /projects/:id should allow a project's instances to be deleted")
     void testDeleteProjectById() throws IOException, InterruptedException {
@@ -1182,4 +1183,145 @@ public class ProjectsTest {
             assertEquals(200, response4.statusCode(), "Expected HTTP 200 Ok");
         }
     }
+
+
+    // --------------------- FAILING TESTS
+    @Test
+    @DisplayName("PUT /projects/:id should allow a project's instances to be amended but fails since requires full object attributes")
+    void testPutProjectByIdFailing() throws IOException, InterruptedException {
+        // Arrange
+        // Create initial project 
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+        // Send the amended project attributes
+        String jsonBody2 = """
+            {
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody2))
+                .build();
+        
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader2 = Json.createReader(new StringReader(response2.body()))) {
+            // Retrieve Response
+            JsonObject json2 = reader2.readObject();
+
+            createdProjectId = json2.getString("id").trim(); // store for cleanup
+            String title = json2.getString("title");
+            boolean completed = Boolean.parseBoolean(json2.getString("completed"));
+            boolean active = Boolean.parseBoolean(json2.getString("active"));
+            String description = json2.getString("description");
+            
+            // Assert
+            assertNotNull(createdProjectId, "Returned project ID should not be null");
+            assertEquals("Future Work", title);
+            assertFalse(completed);
+            assertTrue(active);
+            assertEquals("Work to be completed in the future", description);
+
+            assertEquals(200, response2.statusCode(), "Expected HTTP 200 OK");
+        }
+        
+    }
+
+    @Test
+    @DisplayName("POST /projects should create a project with the given information but fails because of malformed JSON")
+    void testPostProjectFailing() throws IOException, InterruptedException {
+        // Arrange
+        
+        // Parameters for a new project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": "false",
+                "active": "true",
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        // Act
+
+        // POST Request
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(400, response.statusCode(), "Expected HTTP 400 Bad Request");
+    }
+
+    @Test
+    @DisplayName("DELETE /projects/:id should allow a project's instances to be deleted")
+    void testDeleteProjectByIdFailing() throws IOException, InterruptedException {
+        // Arrange
+        // Create initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Act
+        // Delete project
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .DELETE()
+                .build();
+        
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response2.statusCode(), "Expected HTTP 200 OK");
+
+        // Attempting to delete the project again
+        HttpRequest request3 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .DELETE()
+                .build();
+        
+        HttpResponse<String> response3 = client.send(request3, HttpResponse.BodyHandlers.ofString());
+        assertEquals(404, response3.statusCode(), "Expected HTTP 404 Not Found");
+        
+        
+    }
+
 }
