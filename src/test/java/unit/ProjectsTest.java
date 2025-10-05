@@ -575,7 +575,6 @@ public class ProjectsTest {
         HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
         assertTrue(response3a.statusCode() == 201);
 
-        // Associate the category with the project
         String jsonBody3b = String.format("""
             {
                 "id": "%s"
@@ -592,7 +591,7 @@ public class ProjectsTest {
 
         // Act
         HttpRequest request4 = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
                 .GET()
                 .build();
 
@@ -603,10 +602,11 @@ public class ProjectsTest {
             JsonObject root = reader3.readObject();
 
             // Assert
-            assertTrue(root.containsKey("projects"));
-            JsonArray projectsArray = root.getJsonArray("projects");
-            JsonObject project = projectsArray.getJsonObject(0);
-            JsonArray categoriesArray = project.getJsonArray("categories");
+            assertTrue(root.containsKey("categories"));
+            JsonArray categoriesArray = root.getJsonArray("categories");
+
+            assertNotNull(categoriesArray, "Retrieved project array should not be null");
+            assertTrue(categoriesArray.size() > 0, "There should be at least one project");
 
             // Look to see if the category newly associated is in the list of categories of the project
             boolean found1 = false;
@@ -627,10 +627,11 @@ public class ProjectsTest {
             // Assert
             assertTrue(found1, "Category 1 is associated with the project");
             assertTrue(found2, "Category 2 is associated with the project");
-            assertEquals(200, response4.statusCode(), "Expected HTTP 200 Created");
+            assertEquals(200, response4.statusCode(), "Expected HTTP 200 OK");
         }
     }
 
+    // --------------------- /categories/:id ----------------------
     @Test
     @DisplayName("DELETE /projects/:id/categories should delete a project's associated categories with a specific id")
     void testDeleteProjectCategories() throws IOException, InterruptedException {
@@ -706,7 +707,6 @@ public class ProjectsTest {
         HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
         assertTrue(response3a.statusCode() == 201);
 
-        // Associate the category with the project
         String jsonBody3b = String.format("""
             {
                 "id": "%s"
@@ -766,11 +766,420 @@ public class ProjectsTest {
             }
             
             // Assert
-            assertFalse(found1, "Category 1 is should not be associated with the project");
+            assertFalse(found1, "Category 1 should not be associated with the project");
             assertTrue(found2, "Category is associated with the project");
 
             assertEquals(200, response4.statusCode(), "Expected HTTP 200 Created");
         }
 
+    }
+
+    // --------------------- /tasks ----------------------
+    @Test
+    @DisplayName("POST /projects/:id/tasks should create an association between a task (to do item) and a project")
+    void testPostProjectToTask() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Act
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Get the project back to ensure association was created
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .GET()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response4.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("projects"));
+            JsonArray projectsArray = root.getJsonArray("projects");
+            JsonObject project = projectsArray.getJsonObject(0);
+            JsonArray categoriesArray = project.getJsonArray("tasks");
+            
+            // Look to see if the todo items newly associated are in the list of todo items of the project
+            boolean found1 = false;
+            boolean found2 = false;
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdTaskId)) {
+                    found1 = true;
+                    break;
+                }
+            }
+            for (int i = 0; i < categoriesArray.size(); i++) {
+                if (categoriesArray.getJsonObject(i).getString("id").equals(createdTaskId2)) {
+                    found2 = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertTrue(found1, "Category is associated with the project");
+            assertTrue(found2, "Category is associated with the project");
+            assertEquals(201, response3a.statusCode(), "Expected HTTP 201 Created");
+            assertEquals(201, response3b.statusCode(), "Expected HTTP 201 Created");
+        }
+    }
+
+    @Test
+    @DisplayName("GET /projects/:id/tasks should retrieve all associations between tasks (to do items) and a project")
+    void testGetProjectToTask() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+        
+        // Act
+        // Get the project back to ensure association was created
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .GET()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response4.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("todos"));
+            JsonArray tasksArray = root.getJsonArray("todos");
+            
+            // Look to see if the todo items are in the list of todos of the project
+            boolean found1 = false;
+            boolean found2 = false;
+            for (int i = 0; i < tasksArray.size(); i++) {
+                if (tasksArray.getJsonObject(i).getString("id").equals(createdTaskId)) {
+                    found1 = true;
+                    break;
+                }
+            }
+            for (int i = 0; i < tasksArray.size(); i++) {
+                if (tasksArray.getJsonObject(i).getString("id").equals(createdTaskId2)) {
+                    found2 = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertTrue(found1, "Todo item 1 is associated with the project");
+            assertTrue(found2, "Todo item 2 is associated with the project");
+
+            assertEquals(200, response4.statusCode(), "Expected HTTP 200 OK");
+        }
+    }
+
+    // --------------------- /tasks/:id ----------------------
+    @Test
+    @DisplayName("DELETE /projects/:id/tasks/:id should remove the association between tasks (to do items) and a project with specific ids")
+    void testDeleteProjectToTask() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        // Delete one of the todo item associations with the project
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks/" + createdTaskId))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        // Get the project back to ensure association was removed
+        HttpRequest request5 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .GET()
+                .build();
+
+        HttpResponse<String> response5 = client.send(request5, HttpResponse.BodyHandlers.ofString());
+
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response5.body()))) {
+            // Retrieve response 
+            JsonObject root = reader3.readObject();
+
+            // Assert
+            assertTrue(root.containsKey("todos"));
+            JsonArray tasksArray = root.getJsonArray("todos");
+
+            
+            // Look to see if the category newly associated is in the list of categories of the project
+            boolean found1 = false;
+            boolean found2 = false;
+            for (int i = 0; i < tasksArray.size(); i++) {
+                if (tasksArray.getJsonObject(i).getString("id").equals(createdTaskId)) {
+                    found1 = true;
+                    break;
+                }
+            }
+            for (int i = 0; i < tasksArray.size(); i++) {
+                if (tasksArray.getJsonObject(i).getString("id").equals(createdTaskId2)) {
+                    found2 = true;
+                    break;
+                }
+            }
+            
+            // Assert
+            assertFalse(found1, "Todo item 1 should not be associated with the project");
+            assertTrue(found2, "Todo item 2 is associated with the project");
+            assertEquals(200, response4.statusCode(), "Expected HTTP 200 Ok");
+        }
     }
 }
