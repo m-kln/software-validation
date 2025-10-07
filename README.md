@@ -12,3 +12,10 @@ Once installed, launching the application can be done using the command ```java 
 The API can be viewed at http://localhost:4567/gui
 
 To run the tests, open a terminal window and execute this command at the root of the project: ```mvn test```
+
+
+
+# Team Members
+
+John Eric Hamilton (261053044)
+Mona Kalaoun (261044639)
