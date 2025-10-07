@@ -42,6 +42,14 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <useFile>false</useFile> <!-- print to console -->
+                    <reportFormat>plain</reportFormat> <!-- shows each test name -->
+                    <printSummary>true</printSummary>
+                    <properties>
+                        <configurationParameters>
+                            junit.jupiter.displayname.generator.default = org.junit.jupiter.api.DisplayNameGenerator$Standard
+                        </configurationParameters>
+                    </properties>
                 </configuration>
             </plugin>
         </plugins>
