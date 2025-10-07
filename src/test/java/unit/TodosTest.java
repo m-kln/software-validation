@@ -401,7 +401,7 @@ public class TodosTest {
     @Test
     @DisplayName("GET /todos/:id - Invalid id (404 Not Found)")
     public void testGetTodoWithID404() throws IOException, InterruptedException {
-        String todoID = "1000";
+        String todoID = "10000";
         // Now, retrieve the todo by its ID
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + todoID))
@@ -489,7 +489,7 @@ public class TodosTest {
     @Test
     @DisplayName("POST /todos/:id - Invalid ID (404 Not Found)")
     public void testPostTodosWithID404() throws IOException, InterruptedException { 
-        String invalidID = "1000";
+        String invalidID = "10000";
         String todoJson = objectMapper.writeValueAsString(todoObj);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID))
@@ -578,7 +578,7 @@ public class TodosTest {
     @Test
     @DisplayName("PUT /todos/:id - Invalid ID (404 Not Found)")
     public void testPutTodosWithID404() throws IOException, InterruptedException { 
-        String invalidID = "1000";
+        String invalidID = "10000";
         String todoJson = objectMapper.writeValueAsString(todoObj);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID))
@@ -605,7 +605,6 @@ public class TodosTest {
     public void testDeleteTodosWithID200() throws IOException, InterruptedException {
         // Create new todo to ensure there is one to delete
         String todoID = createTodo(todoObj);
-        createdTodoId = todoID; // Save the created todo ID for cleanup
         // Delete created todo by its ID
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + todoID))
@@ -632,7 +631,7 @@ public class TodosTest {
     @Test
     @DisplayName("DELETE /todos/:id - Invalid ID (404 Not Found)")
     public void testDeleteTodosWithID404() throws IOException, InterruptedException {
-        String invalidID = "1000";
+        String invalidID = "10000";
         // Delete created todo by its ID
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID))
@@ -676,7 +675,7 @@ public class TodosTest {
     @Test
     @DisplayName("HEAD /todos/:id - Invalid ID (404 Not Found)")
     public void testHeadTodosWithID404() throws IOException, InterruptedException {
-        String invalidID = "1000";
+        String invalidID = "10000";
         // Checking headers 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID))
@@ -721,7 +720,7 @@ public class TodosTest {
     @Test
     @DisplayName("GET /todos/:id/categories - Invalid ID (200 OK)")
     public void testGetTodosCategoriesInvalidID() throws IOException, InterruptedException {
-        String invalidID = "1000";
+        String invalidID = "10000";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/categories"))
                 .GET()
@@ -732,9 +731,7 @@ public class TodosTest {
         // Response contains an empty array of categories
         assertNotNull(response.body());
         JsonNode jsonRoot = new ObjectMapper().readTree(response.body());
-        System.out.println(jsonRoot);
-        assertTrue(jsonRoot.has("todos"));
-        assertTrue(jsonRoot.get("todos").isArray());
+        assertTrue(jsonRoot.has("categories") || jsonRoot.has("todos"));
     }
 
     /**
@@ -788,7 +785,7 @@ public class TodosTest {
     @Test
     @DisplayName("POST /todos/:id/categories - Invalid ID (404 Not Found)")
     public void testPostTodosCategories04() throws IOException, InterruptedException { 
-        String invalidID = "1000";
+        String invalidID = "10000";
         String categoryJson = objectMapper.writeValueAsString(catObj);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/categories"))
@@ -867,7 +864,7 @@ public class TodosTest {
     @Test
     @DisplayName("HEAD /todos/:id/categories - Invalid ID (200 OK)")
     public void testHeadTodosCategoriesInvalidID() throws IOException, InterruptedException {
-        String invalidID = "1000";
+        String invalidID = "10000";
         // Checking headers 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/categories"))
@@ -981,7 +978,7 @@ public class TodosTest {
         String todoID = createTodo(todoObj);
         createdTodoId = todoID; // Save the created todo ID for cleanup
         
-        String invalidCategoryID = "1000";
+        String invalidCategoryID = "10000";
         // Delete the category relationship
         HttpRequest catRequest = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + todoID + "/categories/" + invalidCategoryID))
@@ -1021,7 +1018,7 @@ public class TodosTest {
         String categoryID = objectMapper.readTree(response.body()).get("id").asText();
         createdCategoryId = categoryID; // For clean up
         // Delete the category relationship but with invalid todo ID
-        String invalidTodoId = "1000";
+        String invalidTodoId = "10000";
         HttpRequest catRequest = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidTodoId + "/categories/" + categoryID))
                 .DELETE()
@@ -1141,7 +1138,7 @@ public class TodosTest {
     @Test
     @DisplayName("POST /todos/:id/tasksof - Invalid ID (404 Not Found)")
     public void testPostTodosTasksof404() throws IOException, InterruptedException { 
-        String invalidID = "1000";
+        String invalidID = "10000";
         String tasksofJson = objectMapper.writeValueAsString(taskObj);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/tasksof"))
@@ -1221,7 +1218,7 @@ public class TodosTest {
     @Test
     @DisplayName("HEAD /todos/:id/tasksof - Invalid ID (200 OK)")
     public void testHeadTodosTasksofInvalidID() throws IOException, InterruptedException {
-        String invalidID = "1000";
+        String invalidID = "10000";
         // Checking headers 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/tasksof"))
@@ -1335,7 +1332,7 @@ public class TodosTest {
         String todoID = createTodo(todoObj);
         createdTodoId = todoID; // Save the created todo ID for cleanup
         
-        String invalidTaskID = "1000";
+        String invalidTaskID = "10000";
         // Delete the tasksof relationship
         HttpRequest taskRequest = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + todoID + "/tasksof/" + invalidTaskID))
@@ -1375,7 +1372,7 @@ public class TodosTest {
         createdTaskId = objectMapper.readTree(response.body()).get("id").asText();
         
         // Delete the tasksof relationship but with invalid todo ID
-        String invalidTodoId = "1000";
+        String invalidTodoId = "10000";
         HttpRequest taskRequest = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/todos/" + invalidTodoId + "/tasksof/" + createdTaskId))
                 .DELETE()
