@@ -315,6 +315,32 @@ public class TodosTest {
     }
 
     /**
+     * DOCUMENTED: Test POST /todos
+     * Create a todo with a malformed XML payload
+     * Status code: 400 Bad Request 
+     */
+    @Test
+    @DisplayName("POST /todos - Malformed XML payload (400 Bad Request)")
+    public void testPostTodosMalformedXmlPayload() throws IOException, InterruptedException {
+        // Create malformed XML (missing closing tags)
+        String malformedXml = "<todo><title>Complete session notes</title><doneStatus>true";
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .header("Content-Type", "application/xml")
+                .POST(HttpRequest.BodyPublishers.ofString(malformedXml))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Verify response status code
+        assertEquals(400, response.statusCode());
+        assertNotNull(response.body());
+        JsonNode jsonRoot = objectMapper.readTree(response.body());
+        assertTrue(jsonRoot.has("errorMessages"));
+        assertTrue(jsonRoot.get("errorMessages").toString().contains("Unclosed"));
+    }    
+
+    /**
      * DOCUMENTED: Test HEAD /todos
      * Return headers for all the todo instances
      * Status code: 200 OK
