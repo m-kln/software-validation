@@ -2073,7 +2073,7 @@ public class ProjectsTest {
     }
 
     @Test
-    @DisplayName("DELETE /projects/:id should allow a project's instances to be deleted")
+    @DisplayName("DELETE /projects/:id should not allow a project's instances to be deleted once they already have been deleted")
     void testDeleteProjectByIdFailing() throws IOException, InterruptedException {
         // Arrange
         // Create initial project
@@ -2121,7 +2121,7 @@ public class ProjectsTest {
     }
 
     @Test
-    @DisplayName("POST /projects should create a project with the given information but fails because of malformed JSON")
+    @DisplayName("POST /projects should create a project with the given information but does not handle a duplicate project properly")
     void testPostProjectDuplicate() throws IOException, InterruptedException {
         // Arrange
         
