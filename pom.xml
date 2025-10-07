@@ -24,6 +24,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Javax Json -->
         <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>javax.json</artifactId>
