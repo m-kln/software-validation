@@ -53,7 +53,7 @@ public class ProjectsTest {
     /** Restore system to its initial state */
     @AfterEach
     void restoreSystemState(){
-        // Only necessary for POST/PUT/DELETE tests to ensure ressources are returned to the originial state
+        // Only necessary for POST/PUT/DELETE tests to ensure ressources that are changed are removed
         if (createdProjectId != null && !createdProjectId.isEmpty()) {
             try {
                 HttpRequest deleteRequest = HttpRequest.newBuilder()
@@ -63,12 +63,12 @@ public class ProjectsTest {
                 
                 HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
                 if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
-                    System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
                 }
                 
-                System.out.println("Cleaned up created project: ");
+                //System.out.println("Cleaned up created project: ");
             } catch (IOException | InterruptedException e) {
-                System.err.println("Failed to clean up project: " + e.getMessage());
+                //System.err.println("Failed to clean up project: " + e.getMessage());
             }
         }
 
@@ -129,7 +129,7 @@ public class ProjectsTest {
 
     @Test
     @DisplayName("GET /projects should return all current instances")
-    void GetAllProjects() throws IOException, InterruptedException {
+    void testGetAllProjects() throws IOException, InterruptedException {
         // Arrange
         
         // Act
@@ -154,6 +154,128 @@ public class ProjectsTest {
             assertEquals(200, response.statusCode(), "Expected HTTP 200 OK");
         }
     }
+
+    @Test
+    @DisplayName("HEAD /projects returns headers for all instances of project")
+    void testHeadAllProjects() throws IOException, InterruptedException {
+        // Arrange
+        
+        // Create a new project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<Void> response2 = client.send(request2, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
+            // Retrieve response
+            JsonObject json = reader.readObject();
+
+            createdProjectId = json.getString("id").trim(); // store for cleanup
+            assertEquals(200, response2.statusCode());
+            assertFalse(response2.headers().map().isEmpty());
+        }
+    }
+
+    @Test
+    @DisplayName("DELETE /projects should not be allowed (undocumented)")
+    void testDeleteAllProjects() throws IOException, InterruptedException {
+        // Arrange
+        
+        // Create a new project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+
+        // Assert
+        try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
+            // Retrieve response
+            JsonObject json = reader.readObject();
+
+            createdProjectId = json.getString("id").trim(); // store for cleanup
+            assertEquals(405, response2.statusCode(), "Expected HTTP 405 Method Not Allowed");
+        }
+    }
+
+    @Test
+    @DisplayName("PUT /projects should not be allowed (undocumented)")
+    void testPutAllProjects() throws IOException, InterruptedException {
+        // Arrange
+        
+        // Create a new project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+
+        // Assert
+        try (JsonReader reader = Json.createReader(new StringReader(response.body()))) {
+            // Retrieve response
+            JsonObject json = reader.readObject();
+
+            createdProjectId = json.getString("id").trim(); // store for cleanup
+            assertEquals(405, response2.statusCode(), "Expected HTTP 405 Method Not Allowed");
+        }
+    }
+
 
     // --------------------- /projects/:id ----------------------
 
@@ -406,6 +528,47 @@ public class ProjectsTest {
         
     }
 
+    @Test
+    @DisplayName("HEAD /projects/:id should return the headers of the instance of project with a specific id")
+    void HeadProjectById() throws IOException, InterruptedException {
+        // Arrange
+        // Creating a project to get 
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<Void> response2 = client.send(request2, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(200, response2.statusCode());
+        assertFalse(response2.headers().map().isEmpty());
+    }   
+
+
     // --------------------- /categories ----------------------
     @Test
     @DisplayName("POST /projects/:id/categories should allow a project to be associated to a category")
@@ -499,7 +662,6 @@ public class ProjectsTest {
         }
 
     }
-
 
     @Test
     @DisplayName("GET /projects/:id/categories should return a project's associated categories")
@@ -631,6 +793,157 @@ public class ProjectsTest {
             assertEquals(200, response4.statusCode(), "Expected HTTP 200 OK");
         }
     }
+
+    
+    @Test
+    @DisplayName("HEAD /projects/:id/categories should return the headers of a project's association to a category")
+    void testHeadProjectToCategory() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create an initial category
+        String jsonBody2 = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2))
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
+        JsonObject json2 = reader2.readObject();
+        String createdCategoryId = json2.getString("id").trim(); 
+        
+        // Associate the category with the project
+        String jsonBody3 = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3))
+                .build();
+        
+        HttpResponse<String> response3 = client.send(request3, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3.statusCode() == 200 || response3.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<Void> response4 = client.send(request4, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(200, response4.statusCode());
+        assertFalse(response4.headers().map().isEmpty());
+
+    }
+    
+    @Test
+    @DisplayName("PUT /projects/:id/categories should not allow a project's association to a category to be changed (undocumented)")
+    void testPutProjectToCategory() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create an initial category
+        String jsonBody2 = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2))
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
+        JsonObject json2 = reader2.readObject();
+        String createdCategoryId = json2.getString("id").trim(); 
+        
+        // Associate the category with the project
+        String jsonBody3 = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3))
+                .build();
+        
+        HttpResponse<String> response3 = client.send(request3, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3.statusCode() == 200 || response3.statusCode() == 201);
+
+        // Act
+        // Attempt to change the project's association 
+        String jsonBody4 = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody4))
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader3 = Json.createReader(new StringReader(response4.body()))) {
+            // Assert
+            assertEquals(405, response4.statusCode(), "Expected HTTP 405 Method Not Allowed");
+        }
+
+    }
+
 
     // --------------------- /categories/:id ----------------------
     @Test
@@ -774,6 +1087,76 @@ public class ProjectsTest {
         }
 
     }
+
+    @Test
+    @DisplayName("GET /projects/:id/categories should not allow to get project's association to a category using both ids in the path (undocumented)")
+    void testGetProjectToCategory() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+
+        // Create an initial category
+        String jsonBody2 = """
+            {
+                "title": "Remote",
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2))
+                .build();
+
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
+        JsonObject json2 = reader2.readObject();
+        String createdCategoryId = json2.getString("id").trim(); 
+        
+        // Associate the category with the project
+        String jsonBody3 = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdCategoryId);
+
+        HttpRequest request3 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3))
+                .build();
+        
+        HttpResponse<String> response3 = client.send(request3, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3.statusCode() == 200 || response3.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/categories/" + createdCategoryId))
+                .GET()
+                .build();
+
+        HttpResponse<Void> response4 = client.send(request4, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(404, response4.statusCode(), "Expected HTTP 404 Not Found"); //should be 405 method not found  
+    }
+
 
     // --------------------- /tasks ----------------------
     @Test
@@ -1042,6 +1425,214 @@ public class ProjectsTest {
         }
     }
 
+    @Test
+    @DisplayName("HEAD /projects/:id/tasks should return the headers of an association between a task (to do item) and a project")
+    void testHeadProjectToTask() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<Void> response4 = client.send(request4, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(200, response4.statusCode());
+        assertFalse(response4.headers().map().isEmpty());
+    }
+
+    @Test
+    @DisplayName("PUT /projects/:id/tasks should not allow the editing of an association between a task (to do item) and a project (undocumented)")
+    void testPutProjectToTask() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        // attempt to modify
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .PUT(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+
+        HttpResponse<String> response4 = client.send(request4, HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(405, response4.statusCode(), "Expected HTTP 405 Method Not Allowed");
+    }
+
+
     // --------------------- /tasks/:id ----------------------
     @Test
     @DisplayName("DELETE /projects/:id/tasks/:id should remove the association between tasks (to do items) and a project with specific ids")
@@ -1184,8 +1775,216 @@ public class ProjectsTest {
         }
     }
 
+    @Test
+    @DisplayName("GET /projects/:id/tasks/:id should return the headers of an association between a task (to do item) and a project with both ids (undocumented)")
+    void testGetProjectToTaskWithId() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
 
-    // --------------------- FAILING TESTS
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks/" + createdTaskId))
+                .GET()
+                .build();
+
+        HttpResponse<Void> response4 = client.send(request4, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(404, response4.statusCode(), "Expected HTTP 404 Not Found"); // Would have expeceted HTTP 405 Method Not Allowed
+    }
+
+    @Test
+    @DisplayName("HEAD /projects/:id/tasks/:id should return the headers of an association between a task (to do item) and a project with both ids (undocumented)")
+    void testHeadProjectToTaskWithId() throws IOException, InterruptedException {
+        // Arrange
+        // Create an initial project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        
+
+        // Create two initial todo items
+        String jsonBody2a = """
+            {
+                "title": "Make tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2a))
+                .build();
+
+        HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
+        JsonObject json2a = reader2a.readObject();
+        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+
+        String jsonBody2b = """
+            {
+                "title": "Run tester",
+                "doneStatus": false,
+                "description": ""
+            }
+            """;
+
+        HttpRequest request2b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2b))
+                .build();
+
+        HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
+        JsonObject json2b = reader2b.readObject();
+        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+
+        // Associate the todo items with the project
+        String jsonBody3a = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId);
+
+        HttpRequest request3a = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3a))
+                .build();
+        
+        HttpResponse<String> response3a = client.send(request3a, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3a.statusCode() == 201);
+
+        String jsonBody3b = String.format("""
+            {
+                "id": "%s"
+            }
+            """, createdTaskId2);
+
+        HttpRequest request3b = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody3b))
+                .build();
+        
+        HttpResponse<String> response3b = client.send(request3b, HttpResponse.BodyHandlers.ofString());
+        assertTrue(response3b.statusCode() == 201);
+
+        // Act
+        HttpRequest request4 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects/" + createdProjectId + "/tasks/" + createdTaskId))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<Void> response4 = client.send(request4, HttpResponse.BodyHandlers.discarding());
+
+        // Assert
+        assertEquals(404, response4.statusCode(), "Expected HTTP 404 Not Found"); // Would have expeceted HTTP 405 Method Not Allowed
+        assertFalse(response4.headers().map().isEmpty());
+    }
+
+    
+
+    // --------------------- Miscellaneous FAILING TESTS -------------------
     @Test
     @DisplayName("PUT /projects/:id should allow a project's instances to be amended but fails since requires full object attributes")
     void testPutProjectByIdFailing() throws IOException, InterruptedException {
@@ -1239,9 +2038,7 @@ public class ProjectsTest {
             
             // Assert
             assertNotNull(createdProjectId, "Returned project ID should not be null");
-            assertEquals("Future Work", title);
-            assertFalse(completed);
-            assertTrue(active);
+            assertEquals("", title); // unexpected behaviour becomes empty because was not included
             assertEquals("Work to be completed in the future", description);
 
             assertEquals(200, response2.statusCode(), "Expected HTTP 200 OK");
@@ -1265,8 +2062,7 @@ public class ProjectsTest {
             """;
 
         // Act
-
-        // POST Request
+        // POST Request 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/projects"))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -1324,4 +2120,66 @@ public class ProjectsTest {
         
     }
 
+    @Test
+    @DisplayName("POST /projects should create a project with the given information but fails because of malformed JSON")
+    void testPostProjectDuplicate() throws IOException, InterruptedException {
+        // Arrange
+        
+        // Parameters for a new project
+        String jsonBody = """
+            {
+                "title": "Future Work",
+                "completed": false,
+                "active": true,
+                "description": "Work to be completed in the future"
+            }
+            """;
+
+        // POST Request 
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        JsonReader reader = Json.createReader(new StringReader(response.body()));
+        JsonObject json = reader.readObject();
+
+        createdProjectId = json.getString("id").trim(); // store for cleanup
+        String title = json.getString("title");
+        boolean completed = Boolean.parseBoolean(json.getString("completed"));
+        boolean active = Boolean.parseBoolean(json.getString("active"));
+        String description = json.getString("description");
+
+        // Act
+        HttpRequest request2 = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/projects"))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        
+        HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
+
+        try (JsonReader reader2 = Json.createReader(new StringReader(response2.body()))) {
+            // Retrieve response
+            JsonObject json2 = reader2.readObject();
+
+            String createdProjectId2 = json2.getString("id").trim(); // store for cleanup
+            String title2 = json2.getString("title");
+            boolean completed2 = Boolean.parseBoolean(json2.getString("completed"));
+            boolean active2 = Boolean.parseBoolean(json2.getString("active"));
+            String description2 = json2.getString("description");
+            
+            // Assert
+            
+            assertEquals(title, title2);
+            assertEquals(completed, completed2);
+            assertEquals(active, active2);
+            assertEquals(description, description2);
+            assertNotEquals(createdProjectId, createdProjectId2); // Should not be created since all information is duplicated yet still created with differnt id
+
+            assertEquals(201, response.statusCode(), "Expected HTTP 201 Created");
+            assertEquals(201, response2.statusCode(), "Expected HTTP 201 Created");
+
+        }
+    }
 }
