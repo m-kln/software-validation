@@ -17,5 +17,5 @@ To run the tests, open a terminal window and execute this command at the root of
 
 # Team Members
 
-John Eric Hamilton (261053044)
-Mona Kalaoun (261044639)
+- John Eric Hamilton (261053044)
+- Mona Kalaoun (261044639)
