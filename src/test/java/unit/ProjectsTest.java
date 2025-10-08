@@ -13,7 +13,7 @@ import javax.json.JsonObject;
 import javax.json.JsonReader;
 
 @TestMethodOrder(MethodOrderer.Random.class)
-public class ProjectsTest {
+public class ProjectsTest extends SystemTest {
 
     private static final String BASE_URL = "http://localhost:4567";
     private static HttpClient client = HttpClient.newHttpClient();
@@ -36,24 +36,6 @@ public class ProjectsTest {
      *  - Restore the system to the initial state
      *  - Run in any order
     */
-
-    /** Ensure the system is ready to be tested */
-    @BeforeAll
-    static void ensureSystemReady() throws IOException, InterruptedException{
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/gui")) // Guaranteed endpoint to check the status of the system
-                .GET()
-                .build();
-        
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        assertEquals(200, response.statusCode());
-    }
-
-    /** Save system state */
-    @BeforeEach
-    void saveSystemState(){
-        // Only necessary for POST/PUT tests to ensure ressources can be returned to the originial state
-    }
 
     /** Restore system to its initial state */
     @AfterEach
@@ -167,11 +149,6 @@ public class ProjectsTest {
             }
         }
 
-    }
-
-    @AfterAll
-    static void tearDown(){
-        // finalize tests
     }
 
     // --------------------- /projects ----------------------

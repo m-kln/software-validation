@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 @TestMethodOrder(MethodOrderer.Random.class)
-public class TodosTest {
+public class TodosTest extends SystemTest {
 
     private static final String BASE_URL = "http://localhost:4567";
     private static HttpClient client = HttpClient.newHttpClient();
@@ -48,24 +48,6 @@ public class TodosTest {
      *  - Run in any order
     */
 
-    /** Ensure the system is ready to be tested */
-    @BeforeAll
-    static void ensureSystemReady() throws IOException, InterruptedException{
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/gui")) // Guaranteed endpoint to check the status of the system
-                .GET()
-                .build();
-        
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        assertEquals(200, response.statusCode());
-    }
-
-    /** Save system state */
-    @BeforeEach
-    void saveSystemState(){
-        // Only necessary for POST/PUT tests to ensure resources can be returned to the originial state
-    }
-
     /** Restore system to its initial state */
     @AfterEach
     void restoreSystemState(){
@@ -82,7 +64,7 @@ public class TodosTest {
                     System.err.println("Failed to clean up todo. Status: " + deleteResponse.statusCode());
                 }
             } catch (IOException | InterruptedException e) {
-                System.err.println("Failed to clean up to do: " + e.getMessage());
+                System.err.println("Failed to clean up todo: " + e.getMessage());
             }
         }
 
@@ -95,10 +77,10 @@ public class TodosTest {
                 
                 HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
                 if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
-                    System.err.println("Failed to clean up cat. Status: " + deleteResponse.statusCode());
+                    System.err.println("Failed to clean up category. Status: " + deleteResponse.statusCode());
                 }
             } catch (IOException | InterruptedException e) {
-                System.err.println("Failed to clean up to do: " + e.getMessage());
+                System.err.println("Failed to clean up category: " + e.getMessage());
             }
         }
 
@@ -114,14 +96,9 @@ public class TodosTest {
                     System.err.println("Failed to clean up task. Status: " + deleteResponse.statusCode());
                 }
             } catch (IOException | InterruptedException e) {
-                System.err.println("Failed to clean up to do: " + e.getMessage());
+                System.err.println("Failed to clean up task: " + e.getMessage());
             }
         }        
-    }
-
-    @AfterAll
-    static void tearDown(){
-        // finalize tests
     }
 
     // -------------- Helper Methods ------------------
@@ -1079,7 +1056,7 @@ public class TodosTest {
     // --------------------- /todos/:id/tasksof ----------------------
 
     /** 
-     * DOCUMENTED - Test HEAD /todos/:id/tasksof
+     * DOCUMENTED - Test GET /todos/:id/tasksof
      * Retrieves all tasksof relationships related to todo with ID
      * Returns 200 OK  
     */
@@ -1099,6 +1076,32 @@ public class TodosTest {
         // Verify status code of the response
         assertEquals(200, response.statusCode());
         // Verify the response body contains tasksof
+        assertNotNull(response.body());
+        JsonNode jsonRoot = new ObjectMapper().readTree(response.body());
+        assertTrue(jsonRoot.has("projects"));
+        assertTrue(jsonRoot.get("projects").isArray());
+    }
+
+    /** 
+     * BUG - Test GET /todos/:id/tasksof
+     * Method with INVALID ID
+     * Response includes a projects array with duplicate project items
+     * Returns 200 OK but should return 404 Not Found
+    */
+    @Test
+    @DisplayName("GET /todos/:id/tasksof - Invalid ID (200 OK)")
+    public void testGetTodosTaskofInvalidID() throws IOException, InterruptedException {
+        String invalidID = "10000";
+        
+        // Retrieve tasksofs for the created todo
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/todos/" + invalidID + "/tasksof"))
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Verify status code of the response
+        assertEquals(200, response.statusCode());
+        // Verify the response body contains projects array
         assertNotNull(response.body());
         JsonNode jsonRoot = new ObjectMapper().readTree(response.body());
         assertTrue(jsonRoot.has("projects"));
