@@ -18,6 +18,11 @@ public class ProjectsTest {
     private static final String BASE_URL = "http://localhost:4567";
     private static HttpClient client = HttpClient.newHttpClient();
     private String createdProjectId;
+    private String createdProjectId2;
+    private String createdCategoryId;
+    private String createdCategoryId2;
+    private String createdTaskId;
+    private String createdTaskId2;
 
     /**
      * Unit test module for testing 
@@ -58,6 +63,96 @@ public class ProjectsTest {
             try {
                 HttpRequest deleteRequest = HttpRequest.newBuilder()
                         .uri(URI.create(BASE_URL + "/projects/" + createdProjectId))
+                        .DELETE()
+                        .build();
+                
+                HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+                if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                }
+                
+                //System.out.println("Cleaned up created project: ");
+            } catch (IOException | InterruptedException e) {
+                //System.err.println("Failed to clean up project: " + e.getMessage());
+            }
+        }
+
+        if (createdProjectId2 != null && !createdProjectId2.isEmpty()) {
+            try {
+                HttpRequest deleteRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/projects/" + createdProjectId2))
+                        .DELETE()
+                        .build();
+                
+                HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+                if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                }
+                
+                //System.out.println("Cleaned up created project: ");
+            } catch (IOException | InterruptedException e) {
+                //System.err.println("Failed to clean up project: " + e.getMessage());
+            }
+        }
+
+        if (createdCategoryId != null && !createdCategoryId.isEmpty()) {
+            try {
+                HttpRequest deleteRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/categories/" + createdCategoryId))
+                        .DELETE()
+                        .build();
+                
+                HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+                if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                }
+                
+                //System.out.println("Cleaned up created project: ");
+            } catch (IOException | InterruptedException e) {
+                //System.err.println("Failed to clean up project: " + e.getMessage());
+            }
+        }
+
+        if (createdCategoryId2 != null && !createdCategoryId2.isEmpty()) {
+            try {
+                HttpRequest deleteRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/categories/" + createdCategoryId2))
+                        .DELETE()
+                        .build();
+                
+                HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+                if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                }
+                
+                //System.out.println("Cleaned up created project: ");
+            } catch (IOException | InterruptedException e) {
+                //System.err.println("Failed to clean up project: " + e.getMessage());
+            }
+        }
+
+        if (createdTaskId != null && !createdTaskId.isEmpty()) {
+            try {
+                HttpRequest deleteRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/todos/" + createdTaskId))
+                        .DELETE()
+                        .build();
+                
+                HttpResponse<String> deleteResponse = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+                if (deleteResponse.statusCode() != 200 && deleteResponse.statusCode()!= 204){
+                    //System.err.println("Failed to clean up. Status: " + deleteResponse.statusCode());
+                }
+                
+                //System.out.println("Cleaned up created project: ");
+            } catch (IOException | InterruptedException e) {
+                //System.err.println("Failed to clean up project: " + e.getMessage());
+            }
+        }
+
+        if (createdTaskId2 != null && !createdTaskId2.isEmpty()) {
+            try {
+                HttpRequest deleteRequest = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/todos/" + createdTaskId2))
                         .DELETE()
                         .build();
                 
@@ -610,7 +705,7 @@ public class ProjectsTest {
         HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
         JsonObject json2 = reader2.readObject();
-        String createdCategoryId = json2.getString("id").trim(); // store for cleanup
+        createdCategoryId = json2.getString("id").trim(); // store for cleanup
 
         // Act
         
@@ -703,7 +798,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdCategoryId = json2a.getString("id").trim(); // store for cleanup
+        createdCategoryId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -720,7 +815,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
+        createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
 
         
        // Associate the categories with the project
@@ -835,7 +930,7 @@ public class ProjectsTest {
         HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
         JsonObject json2 = reader2.readObject();
-        String createdCategoryId = json2.getString("id").trim(); 
+        createdCategoryId = json2.getString("id").trim(); 
         
         // Associate the category with the project
         String jsonBody3 = String.format("""
@@ -906,7 +1001,7 @@ public class ProjectsTest {
         HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
         JsonObject json2 = reader2.readObject();
-        String createdCategoryId = json2.getString("id").trim(); 
+        createdCategoryId = json2.getString("id").trim(); 
         
         // Associate the category with the project
         String jsonBody3 = String.format("""
@@ -986,7 +1081,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdCategoryId = json2a.getString("id").trim(); // store for cleanup
+        createdCategoryId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1003,7 +1098,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
+        createdCategoryId2 = json2b.getString("id").trim(); // store for cleanup
 
         
        // Associate the categories with the project
@@ -1128,7 +1223,7 @@ public class ProjectsTest {
         HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2 = Json.createReader(new StringReader(response2.body()));
         JsonObject json2 = reader2.readObject();
-        String createdCategoryId = json2.getString("id").trim(); 
+        createdCategoryId = json2.getString("id").trim(); 
         
         // Associate the category with the project
         String jsonBody3 = String.format("""
@@ -1201,7 +1296,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1219,7 +1314,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Act
         // Associate the todo items with the project
@@ -1335,7 +1430,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1353,7 +1448,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -1467,7 +1562,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1485,7 +1580,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -1571,7 +1666,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1589,7 +1684,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -1676,7 +1771,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1694,7 +1789,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -1817,7 +1912,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1835,7 +1930,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -1920,7 +2015,7 @@ public class ProjectsTest {
         HttpResponse<String> response2a = client.send(request2a, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2a = Json.createReader(new StringReader(response2a.body()));
         JsonObject json2a = reader2a.readObject();
-        String createdTaskId = json2a.getString("id").trim(); // store for cleanup
+        createdTaskId = json2a.getString("id").trim(); // store for cleanup
 
         String jsonBody2b = """
             {
@@ -1938,7 +2033,7 @@ public class ProjectsTest {
         HttpResponse<String> response2b = client.send(request2b, HttpResponse.BodyHandlers.ofString());
         JsonReader reader2b = Json.createReader(new StringReader(response2b.body()));
         JsonObject json2b = reader2b.readObject();
-        String createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
+        createdTaskId2 = json2b.getString("id").trim(); // store for cleanup
 
         // Associate the todo items with the project
         String jsonBody3a = String.format("""
@@ -2152,9 +2247,18 @@ public class ProjectsTest {
         String description = json.getString("description");
 
         // Act
+        String jsonBody2 = """
+            {
+                "title": "Future Work 5",
+                "completed": false,
+                "active": true,
+                "description": "Work to be completed in the future"
+            }
+            """;
+
         HttpRequest request2 = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/projects"))
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody2))
                 .build();
         
         HttpResponse<String> response2 = client.send(request2, HttpResponse.BodyHandlers.ofString());
@@ -2163,7 +2267,7 @@ public class ProjectsTest {
             // Retrieve response
             JsonObject json2 = reader2.readObject();
 
-            String createdProjectId2 = json2.getString("id").trim(); // store for cleanup
+            createdProjectId2 = json2.getString("id").trim(); // store for cleanup
             String title2 = json2.getString("title");
             boolean completed2 = Boolean.parseBoolean(json2.getString("completed"));
             boolean active2 = Boolean.parseBoolean(json2.getString("active"));
@@ -2171,7 +2275,7 @@ public class ProjectsTest {
             
             // Assert
             
-            assertEquals(title, title2);
+            assertNotEquals(title, title2);
             assertEquals(completed, completed2);
             assertEquals(active, active2);
             assertEquals(description, description2);
@@ -2182,4 +2286,5 @@ public class ProjectsTest {
 
         }
     }
+
 }
